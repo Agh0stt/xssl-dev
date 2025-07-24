@@ -71,83 +71,96 @@ else if (line.startsWith("cd ")) {
     output.push("Failed to change directory.");
   }
 }
-
 else if (line.startsWith("get-pkg ")) {
-const args = line.split(" ").slice(1);
-const action = args[0];
-const name = args[1];
-const silent = args.includes("-y");
-const isSearchLocal = args.includes("--local");
+  const args = line.split(" ").slice(1);
+  const action = args[0];
+  const name = args[1];
+  const silent = args.includes("-y");
+  const isSearchLocal = args.includes("--local");
 
-const targetDir = ".pkg";
-const filePath = ${targetDir}/${name}.pkg;
-const repoURL = https://xssl-pkg-repo.vercel.app/stable/pkg/release/${name}.pkg;
+  const targetDir = ".pkg";
+  const filePath = `${targetDir}/${name}.pkg`;
+  const repoURL = `https://xssl-pkg-repo.vercel.app/stable/pkg/release/${name}.pkg`;
 
-function log(msg) {
-if (!silent) output.push(msg);
-}
+  function log(msg) {
+    if (!silent) output.push(msg);
+  }
 
-if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir);
+  if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir);
 
-if (action === "install") {
-log("Reading package lists... Done");
-log(The following packages will be installed:\n  ${name});
-log("Size: 12 MB");
-log(Get:1 ${repoURL} [51 B]);
+  if (action === "install") {
+    log("Reading package lists... Done");
+    log(`The following packages will be installed:\n  ${name}`);
+    log("Size: 12 MB");
+    log(`Get:1 ${repoURL} [51 B]`);
 
-try {  
-  execSync(`bash scripts/get.sh ${name}`, { stdio: "inherit" });  
-  log(`Package '${name}' installed successfully.`);  
-} catch {  
-  log(`Failed to install package '${name}'`);  
-}
+    try {
+      execSync(`bash scripts/get.sh ${name}`, { stdio: "inherit" });
+      if (fs.existsSync(filePath)) {
+        const pkgCode = fs.readFileSync(filePath, "utf-8");
+        try {
+          eval(pkgCode);
+          log(`Package '${name}' loaded and installed successfully.`);
+        } catch (err) {
+          log(`Package '${name}' downloaded but failed to load: ${err.message}`);
+        }
+      } else {
+        log(`Package '${name}' downloaded but not found.`);
+      }
+    } catch {
+      log(`Failed to install package '${name}'`);
+    }
 
-} else if (action === "uninstall") {
-if (fs.existsSync(filePath)) {
-fs.unlinkSync(filePath);
-log(Package '${name}' uninstalled.);
-} else {
-log(Package '${name}' not found.);
-}
+  } else if (action === "uninstall") {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      log(`Package '${name}' uninstalled.`);
+    } else {
+      log(`Package '${name}' not found.`);
+    }
 
-} else if (action === "reinstall") {
-if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-try {
-execSync(bash scripts/get.sh ${name}, { stdio: "inherit" });
-log(Package '${name}' reinstalled.);
-} catch {
-log(Failed to reinstall package '${name}');
-}
+  } else if (action === "reinstall") {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    try {
+      execSync(`bash scripts/get.sh ${name}`, { stdio: "inherit" });
+      if (fs.existsSync(filePath)) {
+        const pkgCode = fs.readFileSync(filePath, "utf-8");
+        eval(pkgCode);
+        log(`Package '${name}' reinstalled and loaded.`);
+      }
+    } catch {
+      log(`Failed to reinstall package '${name}'`);
+    }
 
-} else if (action === "list" && name === "pkg") {
-const files = fs.readdirSync(targetDir).filter(f => f.endsWith(".pkg"));
-if (files.length > 0) {
-log("Installed packages:");
-files.forEach(f => log(" - " + f.replace(".pkg", "")));
-} else {
-log("No packages installed.");
-}
+  } else if (action === "list" && name === "pkg") {
+    const files = fs.readdirSync(targetDir).filter(f => f.endsWith(".pkg"));
+    if (files.length > 0) {
+      log("Installed packages:");
+      files.forEach(f => log(" - " + f.replace(".pkg", "")));
+    } else {
+      log("No packages installed.");
+    }
 
-} else if (action === "search") {
-if (isSearchLocal) {
-const files = fs.readdirSync(targetDir).filter(f => f.includes(name));
-if (files.length) {
-log("Found locally:");
-files.forEach(f => log(" - " + f));
-} else {
-log(No local results for '${name}');
-}
-} else {
-log(Searching remote repository for '${name}'...);
-log(Found in remote: ${name}.pkg);
-// Later: Add HTTP fetch if metadata.json hosted
-}
+  } else if (action === "search") {
+    if (isSearchLocal) {
+      const files = fs.readdirSync(targetDir).filter(f => f.includes(name));
+      if (files.length) {
+        log("Found locally:");
+        files.forEach(f => log(" - " + f));
+      } else {
+        log(`No local results for '${name}'`);
+      }
+    } else {
+      log(`Searching remote repository for '${name}'...`);
+      log(`Found in remote: ${name}.pkg`);
+      // Optional: You can use fetch to load metadata.json from the repo
+    }
 
-} else {
-log(Unknown action: ${action});
-}
-}
-// This and??
+  } else {
+    log(`Unknown action: ${action}`);
+  }
+  }
+
 
   
 else if (line.startsWith("rf ")) {
