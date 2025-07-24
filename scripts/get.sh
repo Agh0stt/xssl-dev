@@ -1,7 +1,7 @@
 #!/bin/bash
 
 NAME=$1
-BASE_URL="https://xssl-pkg-repo.vercel.app/stable/pkg/release/"
+BASE_URL="https://xssl-pkg-repo.vercel.app/stable/pkg/releases/"
 DEST_DIR=".pkg"
 
 mkdir -p "$DEST_DIR"
